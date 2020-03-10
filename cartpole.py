@@ -24,7 +24,6 @@ state_tensor = torch.from_numpy(state)
 print(state_tensor, type(state_tensor))
 
 # CartPole DQN
-
 class QNetwork(nn.Module):
     def __init__(self, state_dim, action_size):
         super().__init__()
@@ -66,7 +65,6 @@ class QNetwork(nn.Module):
         state_tensor = torch.from_numpy(state)
         q_state = self(state_tensor.float())
         return q_state
-        
         
 class DQNAgent():
     def __init__(self, env):
