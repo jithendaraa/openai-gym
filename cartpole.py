@@ -23,6 +23,7 @@ action_size = env.action_space.n
 state_tensor = torch.from_numpy(state)
 print(state_tensor, type(state_tensor))
 
+# CartPole DQN
 
 class QNetwork(nn.Module):
     def __init__(self, state_dim, action_size):
