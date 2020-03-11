@@ -13,6 +13,7 @@ from skimage import transform
 from skimage.color import rgb2gray
 from collections import deque
 
+tf.compat.v1.disable_eager_execution()
 tf.compat.v1.reset_default_graph()
 warnings.filterwarnings('ignore') # to ignore warnings while training because of skiimage
 
@@ -177,7 +178,7 @@ class DQNetwork:
             self.optimizer = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
 
 # Reset the graph
-tf.reset_default_graph()
+# tf.reset_default_graph()
 # Instantiate DQN
 DQNetwork = DQNetwork(state_size, action_size, learning_rate)
 
@@ -377,3 +378,41 @@ if training == True:
                 if episode % 5 == 0:
                     save_path = saver.save(sess, "./models/model.ckpt")
                     print("Model Saved")
+
+with tf.Session() as sess:
+    total_test_rewards = []
+    # Load model
+    saver.restore(sess, "./models/model.ckpt")
+
+    for episode in range(1):
+        total_rewards = 0
+
+        state = env.reset()
+        state, stacked_frames = stack_frames(stacked_frames, state, True)
+        print("***********************************")
+        print("EPISODE ", episode)
+
+        while True:
+            # Reshape state
+            state = state.reshape((1, *state_size))
+            # Get action from Q-network
+            # Estimate the Qs values state
+            Qs = sess.run(DQNetwork.output, feed_dict = {DQNetwork.inputs_: state})
+
+            # Take the biggest Q value
+            choice = np.argmax(Qs)
+            action = possible_actions[choice]
+
+            next_state, reward, done, _ = env.step(action)
+            env.render()
+            total_rewards += reward
+
+            if done:
+                print("Score", total_rewards)
+                total_test_rewards.append(total_rewards)
+                break
+
+            next_state, stacked_frames = stack_frames(stacked_frames, next_state, False)
+            state = next_state
+
+    env.close()

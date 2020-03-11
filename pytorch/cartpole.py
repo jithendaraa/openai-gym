@@ -10,10 +10,6 @@ import numpy as np
 env_name = 'CartPole-v0'
 env = gym.make(env_name)
 state = env.reset()
-print(type(state))
-print(type(state[0]))
-
-print(type(torch.rand((2,2))))
 print(type(torch.from_numpy(state)), torch.from_numpy(state))
 
 print("Observation space:", env.observation_space)
@@ -21,7 +17,6 @@ print("Action space:", env.action_space)
 state_dim = env.observation_space.shape
 action_size = env.action_space.n
 state_tensor = torch.from_numpy(state)
-print(state_tensor, type(state_tensor))
 
 # CartPole DQN
 class QNetwork(nn.Module):
@@ -92,37 +87,37 @@ class DQNAgent():
             self.eps = 0.99 * self.eps
         
         
-agent = DQNAgent(env)
-num_episodes = 850
-max_reward = 0
-avg_score = 0
+# agent = DQNAgent(env)
+# num_episodes = 850
+# max_reward = 0
+# avg_score = 0
 
-for ep in range(num_episodes):
-    state = env.reset()
-    total_reward = 0
-    done = False
-    while not done:
-        action = agent.get_action(state)
-        next_state, reward, done, info = env.step(action)
-        agent.train(state, action, next_state, reward, done)
-        env.render()
-        total_reward += reward
-        state = next_state
-    print("Episode: {}, total_reward: {:2f}".format(ep, total_reward))
-    if(total_reward > max_reward):
-        max_reward = total_reward
-    if(ep >= 600):
-        avg_score += total_reward
+# for ep in range(num_episodes):
+#     state = env.reset()
+#     total_reward = 0
+#     done = False
+#     while not done:
+#         action = agent.get_action(state)
+#         next_state, reward, done, info = env.step(action)
+#         agent.train(state, action, next_state, reward, done)
+#         env.render()
+#         total_reward += reward
+#         state = next_state
+#     print("Episode: {}, total_reward: {:2f}".format(ep, total_reward))
+#     if(total_reward > max_reward):
+#         max_reward = total_reward
+#     if(ep >= 600):
+#         avg_score += total_reward
 
-print(max_reward)
-print("AVG SCORE:", avg_score/250)
+# print(max_reward)
+# print("AVG SCORE:", avg_score/250)
 
-rewards = []
-print(rewards)
-avg_reward = sum(rewards)/num_episodes
-if avg_reward < 195:
-    print("YOU LOSE")
-else: 
-    print("YOU WON")
-print("Avg. reward: ", avg_reward)
-print("You need an average reward of", 195 ,"over 100 trials to win")
+# rewards = []
+# print(rewards)
+# avg_reward = sum(rewards)/num_episodes
+# if avg_reward < 195:
+#     print("YOU LOSE")
+# else: 
+#     print("YOU WON")
+# print("Avg. reward: ", avg_reward)
+# print("You need an average reward of", 195 ,"over 100 trials to win")
