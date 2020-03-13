@@ -1,6 +1,5 @@
 import gym
 import torch
-import torchvision
 import random
 import torch.nn as nn
 import torch.nn.functional as F
