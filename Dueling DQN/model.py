@@ -147,7 +147,7 @@ class Agent(object):
     dones = torch.tensor(done).to(self.q_eval.device)
 
     V_s, A_s = self.q_eval.forward(state)
-    V_s_, A_s_ = self.q_eval.forward(new_state)
+    V_s_, A_s_ = self.q_next_eval.forward(new_state)
 
     q_pred = torch.add(V_s, (A_s - A_s.mean(dim=1, keepdim=True))).gather(1, action.unsqueeze(-1)).squeeze(-1)
     q_next = torch.add(V_s_, (A_s_ - A_s_.mean(dim=1, keepdim=True)))
