@@ -106,8 +106,8 @@ class DoubleDQNAgent(object):
         if self.memory.mem_cntr < self.batch_size:
             return
     
-        self.q_target.zero_grad()
         self.q_eval.zero_grad()
+        self.q_target.zero_grad()
 
         state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
             
@@ -120,21 +120,16 @@ class DoubleDQNAgent(object):
         action_values = np.array(self.action_space, dtype=np.int8)
         action_indices = np.dot(action, action_values)
         
-        q_next = self.q_target.forward(new_state).to(self.q_eval.device)
-        q_eval = self.q_eval.forward(new_state).to(self.q_eval.device)
-        
+        q_next = self.q_target.forward(new_state).to(self.q_eval.device)        
         q_pred = self.q_eval.forward(state).to(self.q_eval.device)
         
-        _, max_actions = torch.max(q_eval, dim=1)
-        
-        q_target = q_pred.to(self.q_eval.device)
-
+        _, max_actions = torch.max(q_next, dim=1)
         batch_index = np.arange(self.batch_size, dtype=np.int32)
-        
+
+        q_target = self.q_eval.forward(state).to(self.q_eval.device)
         q_target[batch_index, action_indices] = reward + self.gamma * q_next[batch_index, max_actions] * done
-        
-        self.decrement_epsilon()
-        loss = self.q_eval.loss(q_pred, q_target).to(self.q_eval.device)
+
+        loss = self.q_eval.loss(q_target, q_pred)
         loss.backward()
-        # self.q_eval.optimizer.step()
         self.q_eval.optimizer.step()
+        self.decrement_epsilon()
