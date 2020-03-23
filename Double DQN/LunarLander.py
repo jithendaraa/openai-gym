@@ -4,7 +4,7 @@ from model import DoubleDQNAgent
 from utils import plotLearning
 
 env = gym.make('LunarLander-v2')
-num_games = 500
+num_games = 1500
 
 agent = DoubleDQNAgent(alpha=5e-4,
               gamma=0.99,
