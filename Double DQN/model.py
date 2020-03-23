@@ -67,9 +67,9 @@ class DoubleDQN(nn.Module):
 
         return Q
 
-class Agent(object):
+class DoubleDQNAgent(object):
     def __init__(self, alpha, gamma, n_actions, epsilon, batch_size,
-                input_dims, eps_dec=0.996, eps_end=0.01, mem_size=1000000):
+                input_dims, eps_dec=0.996, eps_end=0.01, mem_size=1000000, replace_target=100):
 
         self.gamma = gamma
         self.n_actions = n_actions
@@ -79,6 +79,7 @@ class Agent(object):
         self.eps_min = eps_end
         self.action_space = [i for i in range(self.n_actions)]
         self.memory = ReplayBuffer(mem_size, input_dims, n_actions, True)
+        self.replace_target = replace_target
         self.q_eval = DoubleDQN(alpha, n_actions, input_dims)
         self.q_target = DoubleDQN(alpha, n_actions, input_dims)
 
@@ -132,9 +133,8 @@ class Agent(object):
         
         q_target[batch_index, action_indices] = reward + self.gamma * q_next[batch_index, max_actions] * done
         
+        self.decrement_epsilon()
         loss = self.q_eval.loss(q_pred, q_target).to(self.q_eval.device)
         loss.backward()
         # self.q_eval.optimizer.step()
         self.q_eval.optimizer.step()
-
-        self.decrement_epsilon()

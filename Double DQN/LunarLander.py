@@ -1,12 +1,12 @@
 import gym
 import numpy as np
-from model import Agent
+from model import DoubleDQNAgent
 from utils import plotLearning
 
 env = gym.make('LunarLander-v2')
 num_games = 500
 
-agent = Agent(alpha=6e-4,
+agent = DoubleDQNAgent(alpha=6e-4,
               gamma=0.99,
               n_actions=4,
               epsilon=1.0,
@@ -28,13 +28,12 @@ for i in range(num_games):
         observation_, reward, done, info = env.step(action)
         score += reward
         agent.remember(observation, action, reward, observation_, done)        
-        agent.learn()
         observation = observation_
+        agent.learn()
         env.render()
 
     scores.append(score)
     eps_history.append(agent.epsilon)
-    
     avg_score = np.mean(scores[-100:])
     print('episode ', i+1, 'score %.1f avg_score %.1f espilon %.2f' % \
         (score, avg_score, agent.epsilon))
