@@ -57,6 +57,8 @@ class Agent(object):
 
         actor_loss = -self.log_probs * delta
         critic_loss = (delta) ** 2
-
+        # print("Actor loss: ", actor_loss)
+        # print("Critic Loss: ", critic_loss)
+        # print("Total loss: ", actor_loss + critic_loss)
         (actor_loss+critic_loss).backward()
         self.actor_critic.optimizer.step()
