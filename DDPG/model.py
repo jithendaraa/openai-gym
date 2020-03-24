@@ -301,9 +301,41 @@ class Agent(object):
 
         return mu_prime[0]
     
-    # def learn(self):
-    #     if self.memory.mem_cntr < self.batch_size:
-    #         return
-    #     state, action, reward, new_state, done = \
-    #                                         self.memory.sample_buffer(self.batch_size)
+    def learn(self):
+        if self.memory.mem_cntr < self.batch_size:
+            return
+        state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
+        
         # Updating the params
+        critic_value_ = self.target_critic.predict(new_state, self.target_actor.predict(new_state))
+        target = []
+        '''
+        y[i] = rewards[i] + gamma * Q'( s[i+1], mu'(s[i+1]|theta_mu_') | theta_Q_')
+        As in the paper
+        '''
+        for j in range(self.batch_size):
+            target.append(reward[j] + self.gamma * critic_value_[j] * done[j])
+        target = np.reshape(target, (self.batch_size, 1))
+
+        _ = self.critic.train(state, action, target)
+
+        a_outs = self.actor.predict(state)
+
+        # grad_wrt_theta_mu(J) = 1/N * sum ( grad_wrt_a(Q(s,a|theta_Q) | s=s[i], a=mu(s[i])) * grad_wrt_theta_mu(mu(s|theta_mu) | s[i]))
+        # gradient of critic Q wrt action a
+        grads = self.critic.get_action_gradients(state, a_outs)
+        self.actor.train(state, grads[0]) # train actor
+
+        self.update_network_parameters()
+
+    def save_models(self):
+        self.actor.save_checkpoint()
+        self.target_actor.save_checkpoint()
+        self.critic.save_checkpoint()
+        self.target_critic.save_checkpoint()
+    
+    def load_models(self):
+        self.actor.load_checkpoint()
+        self.target_actor.load_checkpoint()
+        self.critic.load_checkpoint()
+        self.target_critic.load_checkpoint()
