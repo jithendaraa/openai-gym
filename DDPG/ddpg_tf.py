@@ -87,6 +87,7 @@ class Actor(object):
     def __init__(self, lr, n_actions, name, input_dims, sess, fc1_dims, fc2_dims, action_bound, batch_size=64, chkpt_dir='tmp/ddpg'):
         self.lr = lr
         self.n_actions = n_actions
+        self.input_dims = input_dims
         self.name = name
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
@@ -109,7 +110,7 @@ class Actor(object):
     def build_network(self):
         with tf.variable_scope(self.name):
             self.input = tf.placeholder(tf.float32,
-                                        shape=[None, self.*input_dims],
+                                        shape=[None, *self.input_dims],
                                         name='inputs')
             self.action_gradient = tf.placeholder(tf.float32, shape=[None, self.n_actions])
 
@@ -153,17 +154,17 @@ class Actor(object):
         self.saver.restore(self.sess, self.checkpoint_file)
 
 
-def Critic(object):
+class Critic(object):
     def __init__(self, lr, n_actions, name, input_dims, sess, fc1_dims, fc2_dims,
                 batch_size=64, chkpt_dir='tmp/ddpg'):
         self.lr = lr
         self.n_actions = n_actions
+        self.input_dims = input_dims
         self.name = name
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
         self.sess = sess
         self.batch_size = batch_size
-        self.action_bound = action_bound
         self.chkpt_dir = chkpt_dir
         self.build_network()
         self.params = tf.trainable_variables(scope=self.name)
