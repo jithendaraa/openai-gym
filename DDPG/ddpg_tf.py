@@ -27,9 +27,13 @@ Updates are soft, according to theta' = tau*theta + (1-tau)*theta', with tau << 
     (Will need a class for this noise)
 '''
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import numpy as np
 import tensorflow as tf
-from tensorflow.intiializers import random_uniform
+from tensorflow.initializers import random_uniform
+import warnings
+
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 print(tf.test.is_gpu_available())
 
@@ -73,12 +77,13 @@ class ReplayBuffer(object):
 
     def sample_buffer(self, batch_size):
         max_mem = min(self.mem_cntr, self.mem_size)
+
         batch = np.random.choice(max_mem, batch_size)
 
         states = self.state_memory[batch]
         new_states = self.new_state_memory[batch]
         actions = self.action_memory[batch]
-        rewards = self.reward_memory[index]
+        rewards = self.reward_memory[batch]
         terminal = self.terminal_memory[batch]
 
         return states, actions, rewards, new_states, terminal
@@ -135,15 +140,15 @@ class Actor(object):
                                 activation='tanh',
                                 kernel_initializer=random_uniform(-f3, f3),
                                 bias_initializer=random_uniform(-f3, f3))
-            self.mu = tf.multiply(mu, self.actor_bound)
+            self.mu = tf.multiply(mu, self.action_bound)
 
     def predict(self, inputs):
         return self.sess.run(self.mu, feed_dict={self.input: inputs})
 
     def train(self, inputs, gradients):
         self.sess.run(self.optimize,
-                        feed_dict={self.inputs: inputs,
-                                   self.actor_gradients: gradients})
+                        feed_dict={self.input: inputs,
+                                   self.action_gradient: gradients})
 
     def save_checkpoint(self):
         print('....saving checkpoint....')
@@ -209,7 +214,7 @@ class Critic(object):
             batch2 = tf.layers.batch_normalization(dense2)
             
             action_in = tf.layers.dense(self.actions, units=self.fc2_dims,
-                                        activations='relu')
+                                        activation='relu')
             state_actions = tf.add(batch2, action_in)
             state_actions = tf.nn.relu(state_actions)
 
@@ -221,7 +226,7 @@ class Critic(object):
             self.loss = tf.losses.mean_squared_error(self.q_target, self.q)
 
     def predict(self, inputs, actions):
-        return self.sess.run(self.optimize,
+        return self.sess.run(self.q,
                                      feed_dict={self.input: inputs,
                                                 self.actions: actions})
             
@@ -251,6 +256,7 @@ class Agent(object):
                 batch_size=64):
         self.gamma = gamma
         self.tau = tau
+        self.batch_size = batch_size
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
         self.sess = tf.Session()
         self.actor = Actor(alpha, n_actions, 'Actor', input_dims, self.sess, 
@@ -284,12 +290,12 @@ class Agent(object):
         if first:
             old_tau = self.tau
             self.tau = 1.0
-            self.target_critic.sess.run(update_critic)
-            self.target_actor.sess.run(update_actor)
+            self.target_critic.sess.run(self.update_critic)
+            self.target_actor.sess.run(self.update_actor)
             self.tau = old_tau
         else:
-            self.target_critic.sess.run(update_critic)
-            self.target_actor.sess.run(update_actor)
+            self.target_critic.sess.run(self.update_critic)
+            self.target_actor.sess.run(self.update_actor)
         
     def remember(self, state, action, reward, state_, done):
         self.memory.store_transition(state, action, reward, state_, done)
@@ -306,10 +312,11 @@ class Agent(object):
         if self.memory.mem_cntr < self.batch_size:
             return
         state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
-        
+
         # Updating the params
         critic_value_ = self.target_critic.predict(new_state, self.target_actor.predict(new_state))
         target = []
+        
         '''
         y[i] = rewards[i] + gamma * Q'( s[i+1], mu'(s[i+1]|theta_mu_') | theta_Q_')
         As in the paper
@@ -326,7 +333,6 @@ class Agent(object):
         # gradient of critic Q wrt action a
         grads = self.critic.get_action_gradients(state, a_outs)
         self.actor.train(state, grads[0]) # train actor
-
         self.update_network_parameters()
 
     def save_models(self):

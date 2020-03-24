@@ -22,6 +22,7 @@ for i in range(num_epsiodes):
         agent.learn()
         score += reward
         obs = obs_
+        env.render()
     score_history.append(score)
     print('episode ', i, 'score %.2f' % score,
                 '100 game average %.2f' % np.mean(score_history[-100:]))
