@@ -9,7 +9,7 @@ agent = Agent(alpha=1e-4, beta=1e-3, input_dims=[3], tau=0.001, env=env,
 
 np.random.seed(0)
 score_history = []
-num_epsiodes = 1000
+num_epsiodes = 2500
 
 for i in range(num_epsiodes):
     obs = env.reset()
