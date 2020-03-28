@@ -15,7 +15,7 @@ class OUActionNoise(object):
         self.reset()
 
     def __call__(self):
-         x = self.x_prev + self.theta + (self.mu - self.x_prev) * self.dt + \
+        x = self.x_prev + self.theta + (self.mu - self.x_prev) * self.dt + \
             self.sigma * np.sqrt(self.dt)*np.random.normal(size=self.mu.shape)
         self.x_prev = x
         return x 
@@ -52,12 +52,12 @@ class ReplayBuffer(object):
         actions = self.action_memory[batch]
         terminal = self.terminal_memory[batch]
 
-        return states, actions, rewards, new_states, terminal
+        return states, actions, reward, new_states, terminal
 
 class CriticNetwork(nn.Module):
     def __init__(self, beta, input_dims, fc1_dims, fc2_dims, n_actions, name,
                 chkpt_dir='tmp/ddpg'):
-        super(ActorNetwork, self).__init__()
+        super(CriticNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
@@ -76,6 +76,7 @@ class CriticNetwork(nn.Module):
         f2 = 1/np.sqrt(self.fc2.weight.data.size()[0])
         torch.nn.init.uniform_(self.fc2.weight.data, -f2, f2)
         torch.nn.init.uniform_(self.fc2.bias.data, -f2, f2)
+        self.bn2 = nn.LayerNorm(self.fc2_dims)
 
         self.action_value = nn.Linear(self.n_actions, fc2_dims)
         f3 = 0.003
@@ -89,7 +90,7 @@ class CriticNetwork(nn.Module):
 
     def forward(self, state, action):
         state_value = self.fc1(state)
-        state_value = self.bn2(state_value) # Batch Normalization
+        state_value = self.bn1(state_value) # Batch Normalization
         state_value = F.relu(state_value)
         state_value = self.fc2(state_value)
         state_value = self.bn2(state_value)
@@ -111,7 +112,7 @@ class CriticNetwork(nn.Module):
 class ActorNetwork(nn.Module):
     def __init__(self, alpha, input_dims, fc1_dims, fc2_dims, n_actions, name,
                 chkpt_dir='tmp/ddpg'):
-        super(CriticNetwork, self).__init__()
+        super(ActorNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
@@ -135,7 +136,7 @@ class ActorNetwork(nn.Module):
         torch.nn.init.uniform_(self.mu.weight.data, -f3, f3)
         torch.nn.init.uniform_(self.mu.bias.data, -f3, f3)
 
-        self.optimizer = optim.Adam(self.parameters(), lr=beta)
+        self.optimizer = optim.Adam(self.parameters(), lr=alpha)
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.to(self.device)
     
@@ -148,6 +149,7 @@ class ActorNetwork(nn.Module):
         x = F.relu(x)
         # Bound by +1 to -1 
         x = torch.tanh(self.mu(x))
+        return x
     
     def save_checkpoint(self):
         print('...saving checkpoint...')
@@ -183,11 +185,11 @@ class Agent(object):
         # Actor to evaluation mode. Tells pytorch not to calc stats for bn layer. This is there coz we do batch norm. if we use batch norm we need to eval() and train() in pytorch 
         self.actor.eval()
         observation = torch.tensor(observation, dtype=torch.float).to(self.actor.device)
-        mu = self.actor.forward(observation).to(self.actor.device)
+        mu = self.actor(observation).to(self.actor.device)
         mu_prime = mu + torch.tensor(self.noise(), dtype=torch.float).to(self.actor.device)
         self.actor.train()
         # to convert mu_prime to numpy(as req by openAI gym envs)
-        return mu_prime.cpu().detach.numpy()
+        return mu_prime.cpu().detach().numpy()
     
     def remember(self, state, action, reward, state_, done):
         self.memory.store_transition(state, action, reward, state_, done)
