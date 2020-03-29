@@ -21,7 +21,6 @@ state_tensor = torch.from_numpy(state)
 class QNetwork(nn.Module):
     def __init__(self, state_dim, action_size):
         super().__init__()
-        print("HM")
         
         self.action_in = 0
         self.action_one_hot = F.one_hot(torch.arange(0,2)[self.action_in], num_classes=action_size).float()
@@ -111,12 +110,12 @@ for ep in range(num_episodes):
 print(max_reward)
 print("AVG SCORE:", avg_score/250)
 
-rewards = []
-print(rewards)
-avg_reward = sum(rewards)/num_episodes
-if avg_reward < 195:
-    print("YOU LOSE")
-else: 
-    print("YOU WON")
-print("Avg. reward: ", avg_reward)
-print("You need an average reward of", 195 ,"over 100 trials to win")
+# rewards = []
+# print(rewards)
+# avg_reward = sum(rewards)/num_episodes
+# if avg_reward < 195:
+#     print("YOU LOSE")
+# else: 
+#     print("YOU WON")
+# print("Avg. reward: ", avg_reward)
+# print("You need an average reward of", 195 ,"over 100 trials to win")

@@ -16,12 +16,15 @@ class OUActionNoise(object):
 
     def __call__(self):
         x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt + \
-            self.sigma * np.sqrt(self.dt)*np.random.normal(size=self.mu.shape)
+            self.sigma * np.sqrt(self.dt) * np.random.normal(size=self.mu.shape)
         self.x_prev = x
         return x 
 
     def reset(self):
         self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)
+
+    def __repr__(self):
+        return 'OrnsteinUhlenbeckActionNoise(mu={}, sigma={})'.format(self.mu, self.sigma)
 
 class ReplayBuffer(object):
     def __init__(self, max_size, input_shape, n_actions):
@@ -185,7 +188,7 @@ class Agent(object):
         # Actor to evaluation mode. Tells pytorch not to calc stats for bn layer. This is there coz we do batch norm. if we use batch norm we need to eval() and train() in pytorch 
         self.actor.eval()
         observation = torch.tensor(observation, dtype=torch.float).to(self.actor.device)
-        mu = self.actor(observation).to(self.actor.device)
+        mu = self.actor.forward(observation).to(self.actor.device)
         mu_prime = mu + torch.tensor(self.noise(), dtype=torch.float).to(self.actor.device)
         self.actor.train()
         # to convert mu_prime to numpy(as req by openAI gym envs)
@@ -239,6 +242,7 @@ class Agent(object):
     def update_network_parameters(self, tau=None):
         if tau is None:
             tau = self.tau
+        
         actor_params = self.actor.named_parameters()
         critic_params = self.critic.named_parameters()
         target_actor_params = self.target_actor.named_parameters()

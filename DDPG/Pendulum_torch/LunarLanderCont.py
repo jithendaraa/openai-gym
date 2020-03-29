@@ -7,10 +7,12 @@ env = gym.make('LunarLanderContinuous-v2')
 agent = Agent(alpha=0.000025, beta=0.00025, input_dims=[8], tau=0.001, env=env,
               batch_size=64, layer1_size=400, layer2_size=300, n_actions=2)
 
+# agent.load_models()
 np.random.seed(0)
 
 score_history = []
 num_episodes = 1000
+
 for i in range(num_episodes):
     done = False
     score = 0
@@ -23,8 +25,8 @@ for i in range(num_episodes):
         score += reward
         obs = state_
         env.render()
-
     score_history.append(score)
+    
     print('episode ', i, 'score %.2f' % score, '100 game average %.2f' % np.mean(score_history[-100:]))
     if i % 25 == 0:
         agent.save_models()
