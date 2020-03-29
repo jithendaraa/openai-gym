@@ -32,5 +32,5 @@ for i in range(num_episodes):
         agent.save_models()
 
 filename = 'lunar-lander.png'
-x = [i for i in range(num_episodes)]
-plotLearning(x, score_history, score_history, filename)
+# x = [i for i in range(num_episodes)]
+plotLearning(score_history, filename, window=100)
